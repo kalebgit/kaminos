@@ -1,0 +1,11 @@
+
+product:
+  id:
+    type: string
+    primary_key: true
+#  unit_price:
+#    type: float
+#    nullable: false
+#  supplier:
+#    type: one_to_one
+#    entity: sales/supplier
