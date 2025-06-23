@@ -1,28 +1,29 @@
+
 use serde::{Deserialize, Serialize};
-use handlebars::Handlebars;
 use std::collections::HashMap;
-use std::io::PipeReader;
-use kaminos::configs::{PrimaryKeyConfig, AttributeConfig};
+use serde_yaml_ng::Value;
+use serde_yaml_ng::Value::Mapping;
+use std::any::Any;
 
-#[derive(Debug, Deserialize)]
-pub struct Entity {
-    //the first string si the entity name
-    pub attributes: HashMap<String, HashMap<String, Attribute>>
+//mis modulos
+use kaminos::util::{get_class_name, get_mapping_as_hashmap, traverse_attribute};
+
+
+pub struct JavaClass {
+    class_name: String,
+    attributes: Vec<Attribute>
+}
+pub struct Attribute {
+    annotations: String,
+    code: String,
 }
 
-
-#[derive(Debug, Deserialize)]
-// just to know which type it is: "string", "integer", etc.
-pub enum Attribute {
-    Simple(String),
-    Complex(Box<dyn AttributeConfig>)
+fn main() -> Result<(), Box<dyn std::error::Error>>{
+    let content: String = std::fs::read_to_string("assets/products.yml")?;
+    let entity: Value = serde_yaml_ng::from_str(&content)?;
+    let class_name: String = get_class_name(&entity)?;
+    println!("el nombre de la clase es: {}", class_name);
+    traverse_attribute(&entity);
+    Ok(())
 }
 
-
-fn main() -> Result<(), serde_yaml_ng::Error>{
-
-    let mut handlebars = Handlebars::new();
-    
-    handlebars.register_template_file("java_class", )
-
-}

@@ -1,3 +1,6 @@
 public class {{class_name}}{
-    
+    {{#each attributes}}
+        {{this.annotations}}
+        {{this.code}}
+    {{/each}}
 }
