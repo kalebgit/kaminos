@@ -2,6 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::error::Error;
 use std::io::Read;
+use std::panic::panic_any;
 use serde_yaml_ng::{Mapping, Value};
 
 #[derive(Debug)]
@@ -23,28 +24,60 @@ impl std::fmt::Display for ClassError {
 
 impl Error for ClassError {}
 
-pub fn get_class_name(class: &Value) -> Result<String, Box<dyn Error>> {
-    if let Value::Mapping(map)= class {
-        for (key, value) in map {
-            if let Value::String(string_key) = key{
-                return Ok(String::from(string_key))
+
+#[macro_export]
+macro_rules! get_java_type {
+    ($value:expr) => {
+        match $value {
+            Value::String(s) => {
+                match s.as_str() {
+                    "string" =>  "String".to_string() ,
+                    "integer" =>  "int".to_string() ,
+                    "float" =>  "double".to_string() ,
+                    "boolean" =>  "boolean".to_string() ,
+                    "time" =>  "LocalDateTime".to_string() ,
+                    _ => panic!("Datatype in yml invalid")
+                }
             }
+            _ => panic!("Datatype in yml invalid")
         }
-        Err(Box::new(ClassError::NoStringKeys))
-    }else {
-        Err(Box::new(ClassError::NotAMapping))
-    }
+    };
 }
 
-pub fn get_mapping_as_hashmap(map: &Mapping) -> Result<HashMap<String, Value>, Box<dyn Error>> {
-    let mut hashmap: HashMap<String, Value> = HashMap::new();
-    for (key, value) in map {
-        if let Value::String(string_key) = key {
-            hashmap.insert(String::from(string_key), value.clone());
+#[macro_export]
+macro_rules! get_attribute_name {
+    ($value:expr) => {
+        if let Value::String(attribute_name) = $value{
+            attribute_name.clone()
+        }else{
+            panic!("there was no attribute name")
         }
-    }
-    Ok(hashmap)
+    };
 }
+
+
+// pub fn get_class_name(class: &Value) -> Result<String, Box<dyn Error>> {
+//     if let Value::Mapping(map)= class {
+//         for (key, value) in map {
+//             if let Value::String(string_key) = key{
+//                 return Ok(String::from(string_key))
+//             }
+//         }
+//         Err(Box::new(ClassError::NoStringKeys))
+//     }else {
+//         Err(Box::new(ClassError::NotAMapping))
+//     }
+// }
+//
+// pub fn get_mapping_as_hashmap(map: &Mapping) -> Result<HashMap<String, Value>, Box<dyn Error>> {
+//     let mut hashmap: HashMap<String, Value> = HashMap::new();
+//     for (key, value) in map {
+//         if let Value::String(string_key) = key {
+//             hashmap.insert(String::from(string_key), value.clone());
+//         }
+//     }
+//     Ok(hashmap)
+// }
 
 // pub fn traverse_attribute(value: &Value) {
 //     match value {
