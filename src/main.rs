@@ -1,67 +1,12 @@
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use serde_yaml_ng::Value;
 use serde_yaml_ng::Value::Mapping;
 use handlebars::Handlebars;
-
-//mis modulos
-use kaminos::{get_java_type, get_attribute_name};
+use kaminos::classes::{JavaClass};
 
 
 
-#[derive(Debug, Serialize)]
-pub struct JavaClass {
-    class_name: String,
-    attributes: Vec<Attribute>
-}
-
-#[derive(Debug, Serialize)]
-pub struct Attribute {
-    attribute_name: String,
-    attribute_type: String,
-    // annotations: &'static str,
-    // code: &'static str,
-}
-
-impl Attribute {
-    fn new(attribute_name: String, attribute_type: String)->Attribute{
-        Attribute {
-            attribute_name,
-            attribute_type,
-            // annotations:
-        }
-
-    }
-}
-
-impl JavaClass {
-    fn new(entity: &Value, class_name: String) -> JavaClass{
-        if let Mapping(map) = entity {
-            let mut class: JavaClass = JavaClass {
-                class_name,
-                attributes: Vec::with_capacity(map.capacity()),
-            };
-
-            //iterate through each attribute, note there's missing antoher mapping for the configs
-            for (attribute_key, attribute_value) in  map {
-                let attribute_name: String= get_attribute_name!(attribute_key);
-                //we iterate through value
-                if let Mapping(configMap) = attribute_value {
-                    //TODO
-                }
-                //it means it is of primitive type
-                else {
-                    let attribute_type: String = get_java_type!(attribute_value);
-                    class.attributes.push( Attribute::new(attribute_name, attribute_type));
-                }
-            }
-            class
-        }else {
-            panic!("error garrafal")
-        }
-    }
-}
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>>{
