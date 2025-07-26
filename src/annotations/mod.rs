@@ -36,9 +36,11 @@ macro_rules! register_config {
     };
 }
 
-fn create_config(key: &'static str) -> Option<Box<dyn AnnotationProvider>> {
+pub fn create_config(key: &String) -> Option<Box<dyn AnnotationProvider>> {
+    println!("[log] create_config se recibio el key: {}", key);
     for config in inventory::iter::<ConfigRegistry>{
-        if config.key == key {
+        if config.key == key.as_str() {
+            println!("[log] create_config hemos encontrado la configuracion: {}", config.key);
             return Some((config.factory)()) // lo encerramos en parentesis porque el tipo de dato es una funcion
         }
     }

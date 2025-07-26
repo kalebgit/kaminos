@@ -3,7 +3,7 @@ product:
   id: "string"
   email:
     type: string
-    primary_key: true
+    primary_key: "true"
 #  unit_price:
 #    type: float
 #    nullable: false

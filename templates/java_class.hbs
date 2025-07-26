@@ -1,6 +1,11 @@
 public class {{class_name}}{
     {{#each attributes}}
-         
+
+        {{#each configs}}
+            {{#each annotations}}
+        {{this}}
+            {{/each}}
+        {{/each}}
         private {{this.attribute_type}} {{this.attribute_name}};
     {{/each}}
 }

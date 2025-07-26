@@ -6,7 +6,7 @@ use std::io::{Error, ErrorKind};
 
 //mis modulos
 use crate::{get_name, get_java_type};
-use crate::annotations::{AnnotationProvider};
+use crate::annotations::{AnnotationProvider, create_config};
 
 #[derive(Debug, Serialize)]
 pub struct JavaClass {
@@ -18,19 +18,18 @@ pub struct JavaClass {
 pub struct Attribute {
     attribute_name: String,
     attribute_type: String,
-    configs: Option<Vec<Config>>
-    // annotations: &'static str,
-    // code: &'static str,
+    configs: Vec<Config>
 }
 
 #[derive(Debug, Serialize)]
 pub struct Config {
     config_name: String,
     config_value: String,
+    annotations: Vec<String>
 }
 
 impl Attribute {
-    pub fn new(attribute_name: String, attribute_type: String, configs: Option<Vec<Config>>)->Attribute{
+    pub fn new(attribute_name: String, attribute_type: String, configs: Vec<Config>)->Attribute{
         Attribute {
             attribute_name,
             attribute_type,
@@ -42,12 +41,14 @@ impl Attribute {
 }
 
 impl Config {
-    pub fn new(config_name: String, config_value: String)->Config {
+    pub fn new(config_name: String, config_value: String, provider: Box<dyn AnnotationProvider>)->Config {
         Config {
             config_name,
             config_value,
+            annotations: provider.get_annotations()
         }
     }
+
 }
 
 impl JavaClass {
@@ -67,27 +68,42 @@ impl JavaClass {
                 if let Mapping(configMap) = attribute_value {
                     let mut configs: Vec<Config> = Vec::with_capacity(configMap.capacity());
                     let mut attribute_type:String = String::from("");
-                    for (config_name, config_value) in configMap {
+                    for (config_name_raw, config_value_raw) in configMap {
                         //obtener el tipo de dato
+                        let config_name:String = get_name!(config_name_raw);
+
+                        println!("** config_name: {}", config_name);
+
                         if config_name == "type"{
-                            attribute_type = get_java_type!(config_value);
-                        }else{
-                            //no puede haber algun atributo sin tipo de dato
-                            return Err(
-                                Error::new(
-                                    ErrorKind::InvalidData,
-                                    format!("No se especifico un tipo para clase: {}, en atributo: {}", &class.class_name, attribute_name
-                                    )
-                                ));
+                            attribute_type = get_java_type!(config_value_raw);
+                            continue;
                         }
-                        configs.push(Config::new(get_name!(config_name), get_name!(config_value)))
+
+                        let provider: Box<dyn AnnotationProvider> = create_config(&config_name).unwrap();
+
+                        configs.push(Config::new(
+                            config_name,
+                 get_name!(config_value_raw),
+                            provider
+                            ))
                     }
-                    class.attributes.push(Attribute::new(attribute_name, attribute_type, Some(configs)))
+                    if attribute_type.is_empty() {
+                        //no puede haber algun atributo sin tipo de dato
+                        return Err(
+                            Error::new(
+                                ErrorKind::InvalidData,
+                                format!("No se especifico un tipo para clase: {}, en atributo: {}", &class.class_name, attribute_name
+                                )
+                            ));
+                    }
+                    println!("[log] los configs de {} son: {:?}",attribute_name, configs);
+                    //creamos el atributo con las configs
+                    class.attributes.push(Attribute::new(attribute_name, attribute_type, configs))
                 }
                     // significa que solo es tipo primitivo
                 else {
                     let attribute_type: String = get_java_type!(attribute_value);
-                    class.attributes.push( Attribute::new(attribute_name, attribute_type, None));
+                    class.attributes.push( Attribute::new(attribute_name, attribute_type, vec![]));
                 }
             }
             Ok(class)
