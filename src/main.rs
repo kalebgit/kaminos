@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_yaml_ng::Value;
 use serde_yaml_ng::Value::Mapping;
 use handlebars::Handlebars;
-use kaminos::classes::{JavaClass};
+use kaminos::building::{JavaClass};
 
 
 

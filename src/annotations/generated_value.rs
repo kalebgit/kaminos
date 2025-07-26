@@ -6,9 +6,14 @@ use super::{ConfigRegistry,AnnotationProvider};
 struct GeneratedValue;
 
 
-register_config!(GeneratedValue, "generated_value", "@GeneratedValue(strategy = {strategy})",
+register_config!(GeneratedValue, "generated_value", "@GeneratedValue({opts})",
     [
-        ("identity", "GenerationType.IDENTITY"),
-        ("sequence", "GenerationType.SEQUENCE"),
-        ("auto", "GenerationType.AUTO")
+        (
+            "strategy", "strategy = {strategy_opts}", [
+                ("identity", "GenerationType.IDENTITY"),
+                ("sequence", "GenerationType.SEQUENCE"),
+                ("auto", "GenerationType.AUTO")
+
+            ]
+        )
     ]);

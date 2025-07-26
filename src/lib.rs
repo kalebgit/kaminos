@@ -1,3 +1,3 @@
 pub mod util;
-pub mod classes;
+pub mod building;
 pub mod annotations;

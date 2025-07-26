@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use serde::Serialize;
 use serde_yaml_ng::Value;
 use serde_yaml_ng::Value::Mapping;
@@ -34,7 +35,6 @@ impl Attribute {
             attribute_name,
             attribute_type,
             configs
-            // annotations:
         }
 
     }
@@ -44,8 +44,8 @@ impl Config {
     pub fn new(config_name: String, config_value: String, provider: Box<dyn AnnotationProvider>)->Config {
         Config {
             config_name,
-            config_value,
-            annotations: provider.get_annotations()
+            config_value: config_value.clone(),
+            annotations: provider.get_annotations(config_value)
         }
     }
 
@@ -81,6 +81,7 @@ impl JavaClass {
 
                         let provider: Box<dyn AnnotationProvider> = create_config(&config_name).unwrap();
 
+                        //se crean las configuraciones
                         configs.push(Config::new(
                             config_name,
                  get_name!(config_value_raw),

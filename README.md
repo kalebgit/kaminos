@@ -35,12 +35,22 @@ apiforge generate --org=entity
 
 ```yaml
 entity_name: 
-    lombok: 
-        equals: all/explicitly_included
-        to_string: none/include_field_names
-        constructors: no_args/all #recordar callSuper para inheritance
-        setters: all/explicitly_included
-        getters: all/explicitly_included
+    opts:
+      lombok:
+            data: true                    # @Data annotation
+            builder: true                 # @Builder annotation
+            equals_and_hashcode:
+                  include: all               # all | explicit | none
+                  call_super: false          # Para herencia
+            to_string:
+                  include: field_names       # field_names | none | all
+            constructors:
+                  no_args: true
+                  all_args: true
+      
+      jpa:
+        entity: true
+        table_name: users
           
     attribute: <primitive_type>
     #or
@@ -56,7 +66,8 @@ entity_name:
             strategy::
         #para lombok
         lombok: 
-            equals_included: true/false
+            exclude_from_equals: true
+            exclude_from_to_string: true
             setter_access: public/private/protected/none
             getter_access: public/private/protected/none
             
@@ -70,5 +81,22 @@ entity_name:
         foreign_key: user_id
         cascade: delete 
 
+    #alternativa
+    relationships:
+          profile:
+                type: one_to_one
+                target_entity: UserProfile   # Consistente con nombres de clase
+                foreign_key: user_id
+                cascade: [delete, persist]   # Array para múltiples opciones
+            
+          posts:
+                type: one_to_many
+                target_entity: posts.Post    # Sintaxis para otros dominios
+                mapped_by: user_id
+                cascade: [delete]
+
 
 ```
+
+*notas de mojora:*
+- poner explicito false un comportamiento default en codigo
