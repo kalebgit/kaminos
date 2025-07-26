@@ -4,6 +4,7 @@ product:
   email:
     type: string
     primary_key: "true"
+    generated_value: "true"
 #  unit_price:
 #    type: float
 #    nullable: false
