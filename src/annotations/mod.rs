@@ -4,7 +4,7 @@ pub mod primary_key;
 mod generated_value;
 
 pub trait AnnotationProvider {
-    fn get_annotations(&self)->Vec<String>;
+    fn get_annotations(&self, param_selected: String)->Vec<String>;
     fn get_key() -> &'static str where Self : Sized;
 
     //si necesitan parametrizacion
@@ -32,22 +32,36 @@ macro_rules! register_config {
                 $key
             }
             fn get_annotations(&self, param_selected: String) -> Vec<String> {
-                let annotation_raw: String = $annotation.to_string();
+                let mut annotation_result: String = $annotation.to_string();
 
                 //creamos el map
-                let mut params = HashMap::new();
+                let mut params: HashMap<String, String> = HashMap::new();
                 $(
-                    params.insert($param, $param_type);
+                    params.insert($param.to_string(), $param_annotation.to_string());
                 )*
 
-                //crea un breakpoint aqui por si hace panic
-                if let Some(param_extracted) = params.get(param_selected) {
-
-                }else {
-                    panic!("No puede ser, no funciono la extraccion de params para {}", $key);
+                // Si no hay parametros para esta anotacio, devolver annotation original
+                if params.is_empty() {
+                    return vec![annotation_result];
                 }
 
-                // vec![$(    ),*]
+                // si hay params tomar el primero como default
+                let default_value: String = params.get(&param_selected).unwrap().clone();
+
+                // Si no hay parámetros definidos en yaml entonces usamos el valor por defecto
+                if param_selected.is_empty() {
+                    println!("[log] Usando valor por defecto: {}", default_value);
+                }
+
+                //crea un breakpoint aqui por si hace panic
+                // se crea el placeholder "{para_selected}"
+                let param_value_extracted = params.get(&param_selected).unwrap_or(&default_value);
+                let placeholder = format!("{{{}}}", param_selected);
+                annotation_result = annotation_result.replace(&placeholder, param_value_extracted);
+                println!("[log] param {} tiene parametrizaciones, asi quedo el annotation final: \n============\n{}\n============\n", param_selected, annotation_result);
+
+
+                vec![annotation_result]
             }
         }
 

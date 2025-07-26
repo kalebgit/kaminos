@@ -3,13 +3,10 @@ use std::collections::HashMap;
 use crate::register_config;
 use super::{ConfigRegistry,AnnotationProvider};
 
-struct GeneratedValue{
+struct GeneratedValue;
 
 
-}
-
-
-register_config!(GeneratedValue, "generated_value", "@GeneratedValue(strategy = )",
+register_config!(GeneratedValue, "generated_value", "@GeneratedValue(strategy = {strategy})",
     [
         ("identity", "GenerationType.IDENTITY"),
         ("sequence", "GenerationType.SEQUENCE"),
