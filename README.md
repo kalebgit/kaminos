@@ -53,6 +53,7 @@ entity_name:
         format: email
         nullable: false
         primary_key: true #includes nullable
+            strategy::
         #para lombok
         lombok: 
             equals_included: true/false
