@@ -41,11 +41,12 @@ impl Attribute {
 }
 
 impl Config {
-    pub fn new(config_name: String, config_value: String, provider: Box<dyn AnnotationProvider>)->Config {
+    //TODO neceistas pasar una lista de opts del config
+    pub fn new(config_name: String, config_value: String, )->Config {
         Config {
             config_name,
             config_value: config_value.clone(),
-            annotations: provider.get_annotations(config_value)
+            annotations:
         }
     }
 
@@ -72,20 +73,37 @@ impl JavaClass {
                         //obtener el tipo de dato
                         let config_name:String = get_name!(config_name_raw);
 
-                        println!("** config_name: {}", config_name);
+                        println!("** config_name: {} del atributo {}", config_name, attribute_name);
 
+                        //obtener el tipo de dato
                         if config_name == "type"{
                             attribute_type = get_java_type!(config_value_raw);
                             continue;
                         }
 
+
+                        //se crea el proveedor de anotaciones de acuerdo la configuracion (GeneratedValue, PrimaryKey, etc)
                         let provider: Box<dyn AnnotationProvider> = create_config(&config_name).unwrap();
+
+
+                        //si tiene mas opciones dentro de esa configuracion
+                        if let Mapping(optsMap) = attribute_value {
+                            for (opt_name_raw, opt_value_raw) in optsMap {
+
+                            }
+
+                        }
+
+
+                        //TODO: crear las anotaciones por fuera mediante el provder
+                        //TODO: el config_value sirve para el get_annotations, pero ahora sera una lista de clave valor, de lo contrario actua como antes con un simple valo
+                        //TODO: pero un simple valor sera de la forma ["valor"]
 
                         //se crean las configuraciones
                         configs.push(Config::new(
                             config_name,
-                 get_name!(config_value_raw),
-                            provider
+                 get_name!(config_value_raw), //TODO: si no es un valor y son otras opciones no esta bien implementado
+
                             ))
                     }
                     if attribute_type.is_empty() {

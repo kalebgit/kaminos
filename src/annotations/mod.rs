@@ -31,6 +31,7 @@ macro_rules! register_config {
             fn get_key() -> &'static str {
                 $key
             }
+            //TODO: cambiar el param_value_selected por arreglo y que se comporte como antes con [0] si no hya mas elemntos
             fn get_annotations(&self, mut param_value_selected: String) -> Vec<String> {
 
                 //creacion del diccionario de todas las anotaciones de los params
