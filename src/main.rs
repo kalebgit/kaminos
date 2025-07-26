@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     if let Mapping(map) = domain {
         for (entity, attributes_mapping) in map{
             if let Value::String(class_name) = entity {
-                classes.push(JavaClass::new(&attributes_mapping, class_name))
+                classes.push(JavaClass::new(&attributes_mapping, class_name)?)
             }
         }
     }

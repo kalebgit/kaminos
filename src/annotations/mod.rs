@@ -43,6 +43,5 @@ fn create_config(key: &'static str) -> Option<Box<dyn AnnotationProvider>> {
         }
     }
     None
-
 }
 

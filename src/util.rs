@@ -40,7 +40,7 @@ macro_rules! get_java_type {
 }
 
 #[macro_export]
-macro_rules! get_attribute_name {
+macro_rules! get_name {
     ($value:expr) => {
         if let Value::String(attribute_name) = $value{
             attribute_name.clone()
