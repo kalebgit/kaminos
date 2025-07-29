@@ -65,9 +65,14 @@ macro_rules! register_config {
                     //opt_selected_name sera nuestro template general para esa config
                     match opt_selected_name.as_str() {
                         "single_value" => {
+                            println!("[Log] [get_annotations] se detecto como single_value con: {}", param_selected_name);
                             match param_selected_name.as_str() {
                                 "true"=> {
-                                    return config_annotation_result.replace(&placeholder_opts, "");
+                                    println!("[Log] [get_annotations] como fue true entonces solo se imprimira la etiqueta sola");
+
+                                    config_annotation_result = config_annotation_result.replace(&placeholder_opts, "");
+                                    println!("[Log] [get_annotations] la etiqueta para el valor simple es: {}", config_annotation_result);
+                                    return config_annotation_result;
                                 }
                                 "false"=> {
                                     return String::new();
@@ -157,10 +162,10 @@ macro_rules! register_config {
 }
 
 pub fn create_config(key: &String) -> Option<Box<dyn AnnotationProvider>> {
-    println!("[log] create_config se recibio el key: {}", key);
+    println!("[log] [create_config] se recibio la configuracion: {}", key);
     for config in inventory::iter::<ConfigRegistry>{
         if config.key == key.as_str() {
-            println!("[log] create_config hemos encontrado la configuracion: {}", config.key);
+            println!("[log] [create_config] se encontro proveedor de annotaitons para {}", config.key);
             return Some((config.factory)()) // lo encerramos en parentesis porque el tipo de dato es una funcion
         }
     }

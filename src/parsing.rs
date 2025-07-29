@@ -1,7 +1,53 @@
 use std::collections::HashMap;
 use serde_yaml_ng::Value;
-use serde_yaml_ng::Value::Mapping;
 use std::io::{Error, ErrorKind};
+use serde::Serialize;
+use crate::{get_name, get_value_string, get_java_type};
+use crate::annotations::create_config;
+
+// configuracion para anotaciones
+#[derive(Debug, Serialize)]
+pub struct Config {
+    config_name: String,
+    config_value: String,
+    annotation: String
+}
+
+#[derive(Debug, Serialize)]
+pub struct JavaClass {
+    class_name: String,
+    attributes: Vec<Attribute>
+}
+
+#[derive(Debug, Serialize)]
+pub struct Attribute {
+    attribute_name: String,
+    attribute_type: String,
+    configs: Vec<Config>
+}
+
+
+impl Config {
+    pub fn new(config_name: String, config_value: String, annotation:String)->Config {
+        Config {
+            config_name,
+            config_value: config_value.clone(),
+            annotation
+        }
+    }
+
+}
+
+impl Attribute {
+    pub fn new(attribute_name: String, attribute_type: String, configs: Vec<Config>)->Attribute{
+        Attribute {
+            attribute_name,
+            attribute_type,
+            configs
+        }
+
+    }
+}
 
 // Enum para clasificar el tipo de nodo
 #[derive(Debug, PartialEq)]
@@ -68,11 +114,22 @@ impl ParseContext {
 }
 
 impl JavaClass {
+
+    pub fn new()-> Self{
+        JavaClass {
+            class_name: String::new(),
+            attributes: Vec::new()
+
+        }
+    }
+
     pub fn new_recursive(entity: &Value, class_name: String) -> Result<JavaClass, Error> {
         let mut context = ParseContext::new(class_name.clone());
 
         // Iniciar el recorrido recursivo
         Self::traverse_recursive(entity, &mut context)?;
+
+        println!("[Log] los atributos finales de la clase fueron: \n{:?}", context.attributes);
 
         // Construir la clase con los datos recolectados
         Ok(JavaClass {
@@ -104,9 +161,11 @@ impl JavaClass {
                             Self::process_attribute(&key_name, val, context)?;
                         },
                         NodeType::Configuration => {
+                            println!("[LOG] Procesando cofiguracion externa: {}", key_name);
                             Self::process_configuration(&key_name, val, context)?;
                         },
                         NodeType::Primitive => {
+                            println!("[LOG] Procesando valor primitivo externa: {}", key_name);
                             Self::process_primitive_value(&key_name, val, context)?;
                         }
                     }
@@ -167,6 +226,8 @@ impl JavaClass {
                     configs.push(config);
                 }
 
+                println!("[Log] las configs finales del atributo fueron: \n{:?}", configs);
+
                 if attribute_type.is_empty() {
                     return Err(Error::new(
                         ErrorKind::InvalidData,
@@ -205,12 +266,14 @@ impl JavaClass {
                 format!("No se encontró proveedor para configuración: {}", config_name)
             ))?;
 
+
         let mut opts: Vec<(String, String)> = Vec::new();
         let config_value_str: String;
 
         match config_value {
             Value::Mapping(opts_map) => {
                 // Tiene opciones específicas (como strategy en generated key)
+                println!("[Log] procesando las opciones de {}", config_name);
                 for (opt_key, opt_value) in opts_map {
                     opts.push((
                         get_name!(opt_key),
@@ -221,12 +284,15 @@ impl JavaClass {
             },
             _ => {
                 // Valor simple
+                println!("[Log] no hay opciones para esta configuracion, solo un valor...");
                 config_value_str = get_value_string!(&config_value);
                 opts.push(("single_value".to_string(), config_value_str.clone()));
             }
         }
 
         let annotation = provider.get_annotations(opts);
+
+        println!("[Log] se obtuve la equita despues de get_annotation: {}", annotation);
 
         Ok(Config::new(
             config_name.to_string(),
