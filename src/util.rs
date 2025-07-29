@@ -50,7 +50,18 @@ macro_rules! get_name {
     };
 }
 
-
+#[macro_export]
+macro_rules! get_value_string {
+    ($value:expr) => {
+        match $value {
+            Value::String(s) => s.clone(),
+            Value::Bool(b) => b.to_string(),
+            Value::Number(n) => n.to_string(),
+            Value::Null => String::from("null"),
+            _ => panic!("Unsupported value type for string conversion")
+        }
+    };
+}
 /*
 
 DEBUGGING METHODS

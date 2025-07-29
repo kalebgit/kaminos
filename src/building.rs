@@ -6,7 +6,7 @@ use serde_yaml_ng::Value::Mapping;
 use std::io::{Error, ErrorKind};
 
 //mis modulos
-use crate::{get_name, get_java_type};
+use crate::{get_name, get_java_type, get_value_string};
 use crate::annotations::{AnnotationProvider, create_config};
 
 #[derive(Debug, Serialize)]
@@ -86,18 +86,24 @@ impl JavaClass {
                         let provider: Box<dyn AnnotationProvider> = create_config(&config_name).unwrap();
 
 
+                        let mut opts: Vec<(String, String)>= Vec::new();
                         //si tiene mas opciones dentro de esa configuracion
                         if let Mapping(optsMap) = attribute_value {
                             for (opt_name_raw, opt_value_raw) in optsMap {
-
+                                let config_name:String = get_name!(opt_name_raw);
+                                //TODO: HACER LO DEMAS
                             }
 
+                        }else{
+                            opts.push(("single_value".to_string(), get_value_string!(config_value_raw)))
                         }
 
 
                         //TODO: crear las anotaciones por fuera mediante el provder
                         //TODO: el config_value sirve para el get_annotations, pero ahora sera una lista de clave valor, de lo contrario actua como antes con un simple valo
                         //TODO: pero un simple valor sera de la forma ["valor"]
+                        // son puras opts no es select de configs
+                        let annotations: Vec<String> = provider.get_annotations(opts);
 
                         //se crean las configuraciones
                         configs.push(Config::new(

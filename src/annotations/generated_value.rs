@@ -9,11 +9,13 @@ struct GeneratedValue;
 register_config!(GeneratedValue, "generated_value", "@GeneratedValue({opts})",
     [
         (
-            "strategy", "strategy = {strategy_opts}", [
-                ("identity", "GenerationType.IDENTITY"),
-                ("sequence", "GenerationType.SEQUENCE"),
-                ("auto", "GenerationType.AUTO")
+            "strategy",
+                (
+                    "strategy = {strategy_param}",
 
-            ]
+                    [("identity", "GenerationType.IDENTITY"),
+                    ("sequence", "GenerationType.SEQUENCE"),
+                    ("auto", "GenerationType.AUTO")]
+                )
         )
     ]);
