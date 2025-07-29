@@ -62,35 +62,14 @@ macro_rules! get_value_string {
         }
     };
 }
+
+
+
 /*
 
 DEBUGGING METHODS
 
  */
-
-
-// pub fn get_class_name(class: &Value) -> Result<String, Box<dyn Error>> {
-//     if let Value::Mapping(map)= class {
-//         for (key, value) in map {
-//             if let Value::String(string_key) = key{
-//                 return Ok(String::from(string_key))
-//             }
-//         }
-//         Err(Box::new(ClassError::NoStringKeys))
-//     }else {
-//         Err(Box::new(ClassError::NotAMapping))
-//     }
-// }
-//
-// pub fn get_mapping_as_hashmap(map: &Mapping) -> Result<HashMap<String, Value>, Box<dyn Error>> {
-//     let mut hashmap: HashMap<String, Value> = HashMap::new();
-//     for (key, value) in map {
-//         if let Value::String(string_key) = key {
-//             hashmap.insert(String::from(string_key), value.clone());
-//         }
-//     }
-//     Ok(hashmap)
-// }
 
 // pub fn traverse_attribute(value: &Value) {
 //     match value {

@@ -26,7 +26,7 @@ pub struct Attribute {
 pub struct Config {
     config_name: String,
     config_value: String,
-    annotations: Vec<String>
+    annotation: String
 }
 
 impl Attribute {
@@ -42,11 +42,11 @@ impl Attribute {
 
 impl Config {
     //TODO neceistas pasar una lista de opts del config
-    pub fn new(config_name: String, config_value: String, )->Config {
+    pub fn new(config_name: String, config_value: String, annotation:String)->Config {
         Config {
             config_name,
             config_value: config_value.clone(),
-            annotations:
+            annotation
         }
     }
 
@@ -87,29 +87,27 @@ impl JavaClass {
 
 
                         let mut opts: Vec<(String, String)>= Vec::new();
+                        let mut config_value: String;
                         //si tiene mas opciones dentro de esa configuracion
                         if let Mapping(optsMap) = attribute_value {
-                            for (opt_name_raw, opt_value_raw) in optsMap {
-                                let config_name:String = get_name!(opt_name_raw);
-                                //TODO: HACER LO DEMAS
+                            for (opt_name_raw, param_value_raw) in optsMap {
+                                opts.push((get_name!(opt_name_raw), get_value_string!(param_value_raw)));
                             }
+                            config_value = String::new();
 
                         }else{
-                            opts.push(("single_value".to_string(), get_value_string!(config_value_raw)))
+                            config_value = get_value_string!(config_value_raw);
+                            opts.push(("single_value".to_string(), config_value.clone()));
                         }
 
 
-                        //TODO: crear las anotaciones por fuera mediante el provder
-                        //TODO: el config_value sirve para el get_annotations, pero ahora sera una lista de clave valor, de lo contrario actua como antes con un simple valo
-                        //TODO: pero un simple valor sera de la forma ["valor"]
-                        // son puras opts no es select de configs
-                        let annotations: Vec<String> = provider.get_annotations(opts);
+                        let annotation: String = provider.get_annotations(opts);
 
                         //se crean las configuraciones
                         configs.push(Config::new(
                             config_name,
-                 get_name!(config_value_raw), //TODO: si no es un valor y son otras opciones no esta bien implementado
-
+                            config_value,
+                            annotation
                             ))
                     }
                     if attribute_type.is_empty() {

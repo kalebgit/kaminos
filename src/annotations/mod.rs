@@ -1,21 +1,12 @@
-use std::collections::{HashMap};
-use std::hash::Hash;
-
 pub mod primary_key;
 mod generated_value;
 
 pub trait AnnotationProvider {
-    fn get_annotations(&self, configs: Vec<String>)->Vec<String>;
+    fn get_annotations(&self, opts_selected: Vec<(String, String)>)->String;
     fn get_key() -> &'static str where Self : Sized;
-
-    //si necesitan configetrizacion
-    // fn get_annotation_template(&self) -> &'static str;
-    // fn get_default_configs(&self) -> HashMap<String, String> {
-    //     HashMap::new()
-    // }
-    // fn set_configs(&mut self, config_opts)
-
 }
+
+
 
 //usamos registry y factory
 pub struct ConfigRegistry {
@@ -33,12 +24,12 @@ macro_rules! register_config {
             fn get_key() -> &'static str {
                 $key
             }
-            //TODO: cambiar el config_value_selected por arreglo y que se comporte como antes con [0] si no hya mas elemntos
-            fn get_annotations(&self, mut opts_selected: Vec<(String, String)>) -> Vec<String> {
+            fn get_annotations(&self, opts_selected: Vec<(String, String)>) -> String {
+                let mut opts_selected = opts_selected;
 
                 // Creación del diccionario de todas las anotaciones de los configs
                 let mut opts_catalogue: HashMap<String, (String, HashMap<String, String>)> = HashMap::new();
-                let parameters_vec: Vec<(String, String)>;
+                let mut parameters_vec: Vec<(String, String)> = Vec::new();
 
                 // Inicializar el opts_catalogue
                 $(
@@ -56,65 +47,102 @@ macro_rules! register_config {
                     );
                 )*
 
-                //TODO:iterar sobre cada tupla para construir todo el string de config
-                //se anidaran todas las opts_selected que se especifiquen
+                //se anidaran todas las opts_selected que se especifiquen y este se regresara de toda la funcion
                 let mut config_annotation_result: String = $annotation.to_string();
+
+                //crear placeholder general de opts
+                let placeholder_opts: String = format!("{{{}}}", "opts");
 
 
                 //recorremos los opts elegidas para esa conifg
-                println!("[log] configurando el config con {}: ", $key)
-                for (opt_selected_name, param_selected_name) in opts_selected {
+                println!("[log] configurando el config con {}: ", $key);
+
+
+                // cada elemento representa un opt
+                let mut opts_annotations: Vec<String> = Vec::new();
+                //recorremos todos los opts que estaran dentro de
+                for (opt_selected_name, mut param_selected_name) in opts_selected {
                     //opt_selected_name sera nuestro template general para esa config
-                    if opt_selected_name == "single_value" {
-
-                    }else {
-                        println!("[log] (opt) {}: (param) {:?}", opt_selected_name, param_selected_name);
-                        //que pasa si el catalogo de opts esta vacio
-                        if opts_catalogue.is_empty() {
-                            //entonces simpelmente se imprime su anotacion default
-                            $annotation
+                    match opt_selected_name.as_str() {
+                        "single_value" => {
+                            match param_selected_name.as_str() {
+                                "true"=> {
+                                    return config_annotation_result.replace(&placeholder_opts, "");
+                                }
+                                "false"=> {
+                                    return String::new();
+                                }
+                                _ =>{
+                                    panic!("En valores simple solo se puede usar true o false")
+                                }
+                            }
                         }
+                        _ => {
 
-                        //catalogo de params para esa opt
-                        let params_catalogue: HashMap<String, String> = opts_catalogue
-                            .get(&opt_selected_name)
-                            .map(|(_, params)| params.clone())
-                            .unwrap();
+                            println!("[log] (opt) {}: (param) {:?}", opt_selected_name, param_selected_name);
+                            //que pasa si el catalogo de opts esta vacio
+                            if opts_catalogue.is_empty() {
+                                //entonces simpelmente se imprime su anotacion default
+                                return config_annotation_result;
+                            }
+
+                            //catalogo de params para esa opt
+                            let params_catalogue: HashMap<String, String> = opts_catalogue
+                                .get(&opt_selected_name)
+                                .map(|(_, params)| params.clone())
+                                .unwrap();
 
 
-                        // si hay opts_selected catalogue tomar el primero parameter como default
-                        let default_option_name:String = if parameters_vec.is_empty() {
-                            String::new() // O cualquier valor por defecto que prefieras
-                        } else {
-                            parameters_vec.unwrap().0.clone()
-                        };
+                            //crear el placeholder y reemplazar
+                            let placeholder_param: String = format!("{{{}_param}}", $key);
+                            println!("[log] [dentro de {}] el placeholder es: {}",$key, placeholder_param);
 
-                        // Si no hay parámetros definidos en yaml entonces usamos el valor por defecto
-                        if param_selected_name.is_empty() || !config_opts.contains_key(&param_selected_name) {
-                            param_selected_name = default_option;
-                            println!("[log] Usando valor por defecto: {}", config_value_selected);
+
+                            //el template asociado al opt solicitado
+                            let param_selected_template: String = opts_catalogue
+                                .get(&opt_selected_name)
+                                .map(|(annotation, _)| annotation.clone())
+                                .unwrap();
+
+                            let opt_annotation_parcial_result: String;
+
+                            //verificar si es de valores libres o bajo cierto parametro
+                            if param_selected_name == "free" {
+                                //agregamos el valor libre
+                                opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_selected_name); //aunque no es ningun name sino un valor
+                            }else {
+
+                                // si hay opts_selected catalogue tomar el primero parameter como default
+                                let default_option_name:String = if parameters_vec.is_empty() {
+                                    String::new() // O cualquier valor por defecto que prefieras
+                                } else {
+                                    parameters_vec[0].0.clone()
+                                };
+
+                                // Si no hay parámetros definidos en yaml entonces usamos el valor por defecto
+                                if param_selected_name.is_empty() || !params_catalogue.contains_key(&param_selected_name) {
+                                    param_selected_name = default_option_name;
+                                    println!("[log] Usando valor por defecto: {}", param_selected_name);
+                                }
+
+                                //obtener el string asociado al param_selected que ira dentro de la anotacion
+                                let param_selected_final_value: String = params_catalogue
+                                    .get(&param_selected_name)
+                                    .cloned()
+                                    .unwrap();
+
+                                //crear el final string
+
+                                opt_annotation_parcial_result= param_selected_template.replace(&placeholder_param, &param_selected_final_value)
+                            }
+                            println!("[log] el resultado parcial para esta opt de conifg {} es: \n============\n{}\n============\n", $key, opt_annotation_parcial_result);
+                            opts_annotations.push(opt_annotation_parcial_result);
                         }
-
-                        //obtener el string que ira dentro de la anotacion
-                        let param_selected_final_value: String = params_catalogue.get(&param_selected_name);
-                        //crear el placeholder y reemplazar
-                        let placeholder_param: String = format!("{{{}}}", fromat!("{}_param", $key));
-                        println!("[log] [dentro de {}] el placeholder es: {}",$key, placeholder_param);
-
-                        let param_selected_template: String = opts_catalogue
-                            .get(&opt_selected_name)
-                            .map(|(annotation, _)| annotation.clone())
-                            .unwrap();
-
-                        let opt_annotation_parcial_result: String = param_selected_template.replace(&placeholder_param, param_selected_final_value);
-                        println!("[log] el resultado parcial para esta opt de conifg {} es: \n============\n{}\n============\n", $key, opt_annotation_parcial_result);
                     }
                 }
-
-
-
-
-                vec![config_annotation_result]
+                let opts_complete_string_for_annotation = opts_annotations.join(", ");
+                //poniendo todsa las opts dentro de la etiqueta
+                return config_annotation_result.replace(&placeholder_opts, &opts_complete_string_for_annotation);
             }
         }
 
