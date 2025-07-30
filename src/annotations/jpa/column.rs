@@ -10,7 +10,7 @@ register_config!(Column, "column", "@Column({opts})",
             "name",
             (
                 "name = \"{name_param}\"",
-                []
+                [("free", "")]
             )
         ),
         (
@@ -32,6 +32,20 @@ register_config!(Column, "column", "@Column({opts})",
             (
                 "updatable = {updatable_param}",
                 [("true", "true"), ("false", "false")]
+            )
+        ),
+        (
+            "max_length",
+            (
+                "length = {max_length_param}",
+                [("free", "")]
+            )
+        ),
+        (
+            "min_length",
+            (
+                "columnDefinition = \"VARCHAR({min_length_param}) CHECK (LENGTH(column_name) >= {min_length_param})\"",
+                [("free", "")]
             )
         )
     ]);

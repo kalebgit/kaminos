@@ -244,6 +244,8 @@ impl JavaClass {
             "opts" => NodeType::EntityOptions,
             //todas las librerias del entity van a Configuration
             "lombok" | "jpa" | "jackson" if context.is_in_opts() => NodeType::Configuration,
+            // Librerías en atributos (deben ser omitidas y procesadas transparentemente)
+            "lombok" | "jpa" | "jackson" if context.is_in_attributes() => NodeType::EntityOptions,
             //todos los attributos que se incluyen con librerias son atributos normales
             _ if !context.is_in_opts() => NodeType::Attributes,
             _ if context.is_in_opts() => NodeType::Configuration,
@@ -273,14 +275,35 @@ impl JavaClass {
 
 
 
+                    match config_name.as_str() {
+                        "lombok" | "jpa" | "jackson" => {
+                            // Procesar las configuraciones dentro de la librería directamente
+                            if let Value::Mapping(library_configs) = config_value {
+                                for (lib_config_key, lib_config_value) in library_configs {
+                                    let lib_config_name = get_name!(lib_config_key);
 
-                    // Procesar configuracion del atributo
-                    let config = Self::process_field_config(
-                        &config_name,
-                        config_value,
-                        context
-                    )?;
-                    sub_configs.push(config);
+                                    // Procesar cada configuración de la librería como Config normal
+                                    let config = Self::process_field_config(
+                                        &lib_config_name,
+                                        lib_config_value,
+                                        context
+                                    )?;
+                                    sub_configs.push(config);
+                                }
+                            }
+                            // Si no es mapping (ej: lombok: # comentario), ignorar
+                        },
+                        _ => {
+                            // Procesar configuración normal del atributo
+                            let config = Self::process_field_config(
+                                &config_name,
+                                config_value,
+                                context
+                            )?;
+                            sub_configs.push(config);
+                        }
+                    }
+
                 }
 
                 println!("[Log] las sub_configs finales del atributo fueron: \n{:?}", sub_configs);
@@ -420,6 +443,7 @@ impl JavaClass {
                     }
                     _ =>{
                         let config_value_str = get_value_string!(config_value);
+                        println!("[important] la configuracion {} se detecto con valor simple {}", config_name, config_value_str);
                         let annotation = if let Some(provider) = create_config(&config_name) {
                             let opts = vec![("single_value".to_string(), config_value_str.clone())];
                             provider.get_annotations(opts)

@@ -1,6 +1,6 @@
 pub mod jpa;
 pub mod lombok;
-
+mod general;
 
 pub trait AnnotationProvider {
     fn get_annotations(&self, opts_selected: Vec<(String, String)>)->String;
@@ -27,6 +27,8 @@ macro_rules! register_config {
             }
             fn get_annotations(&self, opts_selected: Vec<(String, String)>) -> String {
                 let mut opts_selected = opts_selected;
+                //nombre de la configuracion
+                let config_name:String = $key.to_string();
 
                 // Creación del diccionario de todas las anotaciones de los configs
                 let mut opts_catalogue: HashMap<String, (String, HashMap<String, String>)> = HashMap::new();
@@ -51,8 +53,9 @@ macro_rules! register_config {
 
 
 
-                //se anidaran todas las opts_selected que se especifiquen y este se regresara de toda la funcion
+                //se anidaran todas las opts_selected que se especifiqujen y este se regresara de toda la funcion
                 let mut config_annotation_result: String = $annotation.to_string();
+
 
                 //crear placeholder general de opts
                 let placeholder_opts: String = format!("{{{}}}", "opts");
@@ -124,34 +127,80 @@ macro_rules! register_config {
                             let default_option_name:String = if parameters_vec.is_empty() {
                                 String::new() // O cualquier valor por defecto que prefieras
                             } else {
-                                parameters_vec[0].0.clone()
+                                //IMPORTANTE: ESTUDIAR ESTO PUES ASI SACAMOS LA PRIMERA LLAVE DE NUESTRO DICCIONARIO
+                                params_catalogue.keys().next().unwrap_or(&String::new()).clone()
                             };
 
 
                             let param_backup_for_free_variables: String = param_selected_name.clone();
-                            // si el parametro no esta dentro de la lista definida (puede ser cuando haya variables libres)
+
+
+
+
+
+                            //PRIMERA OPCION
                             if param_selected_name.is_empty() || !params_catalogue.contains_key(&param_selected_name) {
-                                param_selected_name = default_option_name;
-                                println!("[log] Usando valor por defecto: {}", param_selected_name);
-                            }
+                                //Verificar si soporta valores libres
+                                if params_catalogue.contains_key("free") && !param_backup_for_free_variables.is_empty() {
+                                    // Es un valor libre, usar el valor original
+                                    opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_backup_for_free_variables);
+                                } else {
+                                    // Usar valor por defecto
+                                    param_selected_name = default_option_name;
+                                    println!("[log] Usando valor por defecto: {}", param_selected_name);
 
+                                    let param_selected_final_value: String = params_catalogue
+                                        .get(&param_selected_name)
+                                        .cloned()
+                                        .unwrap_or_default();
 
-                            //variable final o vlaor para el opt
-                            let mut param_selected_final_value: String = String::new();
-                            //si la variable es libre
-                            if param_selected_name == "free" {
-                                param_selected_final_value = param_backup_for_free_variables;
-                            }else {
-                                //obtener el string asociado al param_selected que ira dentro de la anotacion
-                                 param_selected_final_value = params_catalogue
+                                    opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_selected_final_value);
+                                }
+                            } else {
+                                // El parámetro existe en el catálogo
+                                let param_selected_final_value: String = params_catalogue
                                     .get(&param_selected_name)
                                     .cloned()
-                                    .unwrap();
+                                    .unwrap_or_default();
+
+                                opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_selected_final_value);
                             }
 
 
-                            //crear el final string
-                            opt_annotation_parcial_result= param_selected_template.replace(&placeholder_param, &param_selected_final_value);
+
+                            //SEGUNDA OPCION
+                            // si el parametro no esta dentro de la lista definida (puede ser cuando haya variables libres)
+                            // if param_selected_name.is_empty() || !params_catalogue.contains_key(&param_selected_name) {
+                            //     param_selected_name = default_option_name;
+                            //     println!("[log] Usando valor por defecto: {}", param_selected_name);
+                            // }
+                            //
+                            //
+                            // //variable final o vlaor para el opt
+                            // let mut param_selected_final_value: String = String::new();
+                            // //si la variable es libre
+                            // if param_selected_name == "free" {
+                            //     param_selected_final_value = param_backup_for_free_variables;
+                            // }else {
+                            //     //verificamos si en verdad no existe esa opcion dentro del config
+                            //     if !params_catalogue.contains_key(&param_selected_name) {
+                            //         panic!("no hay opciones disponibles para {} en la configuracion {} con parametro {}",
+                            //             opt_selected_name, config_name, param_selected_name);
+                            //     }
+                            //
+                            //     //obtener el string asociado al param_selected que ira dentro de la anotacion
+                            //      param_selected_final_value = params_catalogue
+                            //         .get(&param_selected_name)
+                            //         .cloned()
+                            //         .unwrap();
+                            // }
+                            //
+                            //
+                            // //crear el final string
+                            // opt_annotation_parcial_result= param_selected_template.replace(&placeholder_param, &param_selected_final_value);
+
+
+
                             println!("[log] el resultado parcial para esta opt de conifg {} es: \n============\n{}\n============\n", $key, opt_annotation_parcial_result);
                             opts_annotations.push(opt_annotation_parcial_result);
                         }
@@ -174,7 +223,7 @@ macro_rules! register_config {
 }
 
 pub fn create_config(key: &String) -> Option<Box<dyn AnnotationProvider>> {
-    println!("[log] [create_config] se recibio la configuracion: {}", key);
+    println!("[log] [create_config] se recibio la configuracion: {} con parametro", key);
     for config in inventory::iter::<ConfigRegistry>{
         if config.key == key.as_str() {
             println!("[log] [create_config] se encontro proveedor de annotaitons para {}", config.key);

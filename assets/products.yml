@@ -49,7 +49,7 @@ user:
     type: string
     required: true
     unique: true
-    format: email
+#    format: email
     lombok:
     # No necesita configuración específica ya que only_explicitly_included: false
     jpa:
