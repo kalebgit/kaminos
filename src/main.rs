@@ -21,12 +21,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         }
     }
 
+
     println!("[Log] la clase final quedo con estos datos: \n{:?}", class);
     // println!("el java class final: {:?}", classes[0]);
-    let mut handlerbars: Handlebars = Handlebars::new();
-    handlerbars.register_template_file("java_class", "templates/java_class.hbs").unwrap();
-    let output = handlerbars.render("java_class", &class)?;
+    let mut handlebars: Handlebars = Handlebars::new();
+    handlebars.register_escape_fn(handlebars::no_escape);
+    handlebars.register_template_file("java_class", "templates/java_class.hbs").unwrap();
+    let output = handlebars.render("java_class", &class)?;
     println!("{}", output);
+
+
+    let placeholder: String = String::from("{parametro}");
+    let mut template: String= String::from("el valor es {parametro}");
+    template = template.replace(&placeholder, "emi");
+    println!("{}", template);
     Ok(())
 }
 

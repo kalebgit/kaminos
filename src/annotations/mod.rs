@@ -110,7 +110,7 @@ macro_rules! register_config {
                                 .unwrap();
 
                             //crear el placeholder y reemplazar
-                            let placeholder_param: String = format!("{{{}_param}}", $key);
+                            let placeholder_param: String = format!("{{{}_param}}", opt_selected_name);
                             println!("[log] [dentro de {}] el placeholder es: {}",$key, placeholder_param);
 
 
@@ -143,7 +143,11 @@ macro_rules! register_config {
                                 //Verificar si soporta valores libres
                                 if params_catalogue.contains_key("free") && !param_backup_for_free_variables.is_empty() {
                                     // Es un valor libre, usar el valor original
+                                    println!("❗ ❗ ❗ ❗ ❗ ❗  valor final: {}", param_backup_for_free_variables );
+                                    println!("❗ ❗ ❗ ❗ ❗ ❗  placeholder : {}", placeholder_param );
+                                    println!("❗ ❗ ❗ ❗ ❗ ❗  template : {}", param_selected_template );
                                     opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_backup_for_free_variables);
+                                    println!("❗ ❗ ❗ ❗ ❗ ❗  template reemplazado final: {}", opt_annotation_parcial_result );
                                 } else {
                                     // Usar valor por defecto
                                     param_selected_name = default_option_name;
@@ -153,6 +157,8 @@ macro_rules! register_config {
                                         .get(&param_selected_name)
                                         .cloned()
                                         .unwrap_or_default();
+
+                                    println!("❗ ❗ ❗ ❗ ❗ ❗  valor final: {}", param_selected_name );
 
                                     opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_selected_final_value);
                                 }
@@ -167,37 +173,6 @@ macro_rules! register_config {
                             }
 
 
-
-                            //SEGUNDA OPCION
-                            // si el parametro no esta dentro de la lista definida (puede ser cuando haya variables libres)
-                            // if param_selected_name.is_empty() || !params_catalogue.contains_key(&param_selected_name) {
-                            //     param_selected_name = default_option_name;
-                            //     println!("[log] Usando valor por defecto: {}", param_selected_name);
-                            // }
-                            //
-                            //
-                            // //variable final o vlaor para el opt
-                            // let mut param_selected_final_value: String = String::new();
-                            // //si la variable es libre
-                            // if param_selected_name == "free" {
-                            //     param_selected_final_value = param_backup_for_free_variables;
-                            // }else {
-                            //     //verificamos si en verdad no existe esa opcion dentro del config
-                            //     if !params_catalogue.contains_key(&param_selected_name) {
-                            //         panic!("no hay opciones disponibles para {} en la configuracion {} con parametro {}",
-                            //             opt_selected_name, config_name, param_selected_name);
-                            //     }
-                            //
-                            //     //obtener el string asociado al param_selected que ira dentro de la anotacion
-                            //      param_selected_final_value = params_catalogue
-                            //         .get(&param_selected_name)
-                            //         .cloned()
-                            //         .unwrap();
-                            // }
-                            //
-                            //
-                            // //crear el final string
-                            // opt_annotation_parcial_result= param_selected_template.replace(&placeholder_param, &param_selected_final_value);
 
 
 
