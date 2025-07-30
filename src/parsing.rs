@@ -5,17 +5,27 @@ use serde::Serialize;
 use crate::{get_name, get_value_string, get_java_type};
 use crate::annotations::create_config;
 
-// configuracion para anotaciones
-#[derive(Debug, Serialize)]
+// configuracion para anotaciones en atributos
+#[derive(Debug, Serialize, Clone)]
 pub struct Config {
     config_name: String,
     config_value: String,
     annotation: String
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct LibraryConfig {
+    config_name: String,
+    config_value: String,
+    sub_configs: Vec<Config>,
+    annotation: String
+}
+
+
 #[derive(Debug, Serialize)]
 pub struct JavaClass {
     class_name: String,
+    headers: Vec<LibraryConfig>,
     attributes: Vec<Attribute>
 }
 
@@ -23,7 +33,7 @@ pub struct JavaClass {
 pub struct Attribute {
     attribute_name: String,
     attribute_type: String,
-    configs: Vec<Config>
+    sub_configs: Vec<Config>
 }
 
 
@@ -38,12 +48,23 @@ impl Config {
 
 }
 
+impl LibraryConfig {
+    fn new(config_name: String, config_value: String, sub_configs: Vec<Config>, annotation: String) -> Self {
+        Self {
+            config_name,
+            config_value,
+            sub_configs,
+            annotation,
+        }
+    }
+}
+
 impl Attribute {
-    pub fn new(attribute_name: String, attribute_type: String, configs: Vec<Config>)->Attribute{
+    pub fn new(attribute_name: String, attribute_type: String, sub_configs: Vec<Config>)->Attribute{
         Attribute {
             attribute_name,
             attribute_type,
-            configs
+            sub_configs
         }
 
     }
@@ -63,8 +84,9 @@ enum NodeType {
 struct ParseContext {
     current_path: Vec<String>,
     entity_name: String,
-    lombok_configs: HashMap<String, Value>,
-    jpa_configs: HashMap<String, Value>,
+    lombok_configs: Vec<LibraryConfig>,
+    jpa_configs: Vec<LibraryConfig>,
+    jackson_configs: Vec<LibraryConfig>,
     attributes: Vec<Attribute>,
 }
 
@@ -73,8 +95,9 @@ impl ParseContext {
         Self {
             current_path: Vec::new(),
             entity_name,
-            lombok_configs: HashMap::new(),
-            jpa_configs: HashMap::new(),
+            lombok_configs: Vec::new(),
+            jpa_configs: Vec::new(),
+            jackson_configs: Vec::new(),
             attributes: Vec::new(),
         }
     }
@@ -108,8 +131,23 @@ impl ParseContext {
             self.current_path[1] == "jpa"
     }
 
-    fn is_attribute(&self) -> bool {
+    fn is_in_attributes(&self) -> bool {
         !self.is_in_opts() && !self.current_path.is_empty()
+    }
+
+    fn current_library(&self) -> Option<&str> {
+        self.current_path.last().and_then(|lib| {
+            if matches!(lib.as_str(), "lombok" | "jpa" | "jackson") {
+                Some(lib.as_str())
+            } else {
+                None
+            }
+        })
+    }
+
+
+    fn is_attribute_library_config(&self) -> bool {
+        self.is_in_attributes() && self.current_library().is_some()
     }
 }
 
@@ -117,6 +155,7 @@ impl JavaClass {
 
     pub fn new()-> Self{
         JavaClass {
+            headers: Vec::new(),
             class_name: String::new(),
             attributes: Vec::new()
 
@@ -133,6 +172,7 @@ impl JavaClass {
 
         // Construir la clase con los datos recolectados
         Ok(JavaClass {
+            headers: [context.jackson_configs, context.lombok_configs, context.jpa_configs].concat(),
             class_name,
             attributes: context.attributes,
         })
@@ -161,8 +201,19 @@ impl JavaClass {
                             Self::process_attribute(&key_name, val, context)?;
                         },
                         NodeType::Configuration => {
-                            println!("[LOG] Procesando cofiguracion externa: {}", key_name);
-                            Self::process_configuration(&key_name, val, context)?;
+                            // ✅ Usar process_library_config directamente
+                            println!("[LOG] Procesando configuración de librería: {}", key_name);
+
+                            // Determinar qué librería es basándose en el contexto
+                            match key_name.as_str() {
+                                "lombok" | "jpa" | "jackson" => {
+                                    Self::process_library_config(&key_name, val, context)?;
+                                },
+                                _ => {
+                                    // Otras configuraciones que no son librerías
+                                    Self::traverse_recursive(val, context)?;
+                                }
+                            }
                         },
                         NodeType::Primitive => {
                             println!("[LOG] Procesando valor primitivo externa: {}", key_name);
@@ -191,9 +242,11 @@ impl JavaClass {
     fn classify_node(key_name: &str, context: &ParseContext) -> NodeType {
         match key_name {
             "opts" => NodeType::EntityOptions,
-            "lombok" | "jpa" if context.is_in_opts() => NodeType::Configuration,
-            _ if context.is_in_opts() => NodeType::Configuration,
+            //todas las librerias del entity van a Configuration
+            "lombok" | "jpa" | "jackson" if context.is_in_opts() => NodeType::Configuration,
+            //todos los attributos que se incluyen con librerias son atributos normales
             _ if !context.is_in_opts() => NodeType::Attributes,
+            _ if context.is_in_opts() => NodeType::Configuration,
             _ => NodeType::Primitive,
         }
     }
@@ -205,8 +258,9 @@ impl JavaClass {
     ) -> Result<(), Error> {
         match attribute_value {
             // Atributo con configuraciones
+            // i.e. un generated_value, puede tener mas opts pero se procesaran en process_field
             Value::Mapping(config_map) => {
-                let mut configs: Vec<Config> = Vec::new();
+                let mut sub_configs: Vec<Config> = Vec::new();
                 let mut attribute_type = String::new();
 
                 for (config_key, config_value) in config_map {
@@ -217,16 +271,19 @@ impl JavaClass {
                         continue;
                     }
 
+
+
+
                     // Procesar configuracion del atributo
-                    let config = Self::process_attribute_config(
+                    let config = Self::process_field_config(
                         &config_name,
                         config_value,
                         context
                     )?;
-                    configs.push(config);
+                    sub_configs.push(config);
                 }
 
-                println!("[Log] las configs finales del atributo fueron: \n{:?}", configs);
+                println!("[Log] las sub_configs finales del atributo fueron: \n{:?}", sub_configs);
 
                 if attribute_type.is_empty() {
                     return Err(Error::new(
@@ -238,7 +295,7 @@ impl JavaClass {
                 context.attributes.push(Attribute::new(
                     attribute_name.to_string(),
                     attribute_type,
-                    configs
+                    sub_configs
                 ));
             },
             // Atributo primitivo
@@ -254,7 +311,15 @@ impl JavaClass {
         Ok(())
     }
 
-    fn process_attribute_config(
+    /*
+    Este metodo es usado cuando un campo tiene opciones anidadas
+    como:
+        //cada una de estas serian un config: pueden o no tener opts
+        generated_value:
+            //opts (manejadas dentro del match config_value
+            strategy
+     */
+    fn process_field_config(
         config_name: &str,
         config_value: &Value,
         context: &ParseContext
@@ -301,20 +366,71 @@ impl JavaClass {
         ))
     }
 
-    fn process_configuration(
-        config_name: &str,
-        config_value: &Value,
+
+    /*
+     Aqui cada config es el principal campo, como attribute para los campos de la clase
+     sub_configs es el equivalente a sub_configs en attribute
+     */
+    fn process_library_config (
+        library_name: &str,
+        library_configs: &Value,
         context: &mut ParseContext
-    ) -> Result<(), Error> {
-        if context.is_lombok_config() {
-            println!("[LOG] Guardando configuración Lombok: {}", config_name);
-            context.lombok_configs.insert(config_name.to_string(), config_value.clone());
-        } else if context.is_jpa_config() {
-            println!("[LOG] Guardando configuración JPA: {}", config_name);
-            context.jpa_configs.insert(config_name.to_string(), config_value.clone());
-        } else {
-            // Otros tipos de configuración
-            Self::traverse_recursive(config_value, context)?;
+    )->Result<(), Error>{
+        //si existen configuraciones para cierta libreria
+        if let Value::Mapping(configs_map) = library_configs {
+            //iteramos sobre cada configuracion como data: true, builder: true, o equals_hashcode: compuesto para lombok
+            //por cada iteracion se debe crear un LibraryConfig
+            for (config_key, config_value) in configs_map {
+                let config_name = get_name!(config_key);
+                //se deben crear las sub_configuraciones si tiene el config
+                let library_config = match config_value {
+                    //significa que tiene opciones extra o sub_configs
+                    //se debe crear una Config por cada iteracion su mapping
+                    Value::Mapping(sub_config_map) => {
+                        let mut sub_configs: Vec<Config> = Vec::new();
+                        for (sub_config_key, sub_config_value) in sub_config_map {
+                            let sub_config_name = get_name!(sub_config_key);
+                            let processed_config: Config = Self::process_field_config(&sub_config_name, sub_config_value, &context)?;
+                            sub_configs.push(processed_config);
+                        }
+
+                        let annotation: String = sub_configs.iter().map(|config| config.annotation.as_str()).collect::<Vec<&str>>().join(", ");
+
+                        //creamos el lib a partir de todas las sub_configs
+                        LibraryConfig::new(
+                            config_name,
+                            String::new(),
+                            sub_configs,
+                            annotation
+                        )
+                    }
+                    _ =>{
+                        let config_value_str = get_value_string!(config_value);
+                        let annotation = if let Some(provider) = create_config(&config_name) {
+                            let opts = vec![("single_value".to_string(), config_value_str.clone())];
+                            provider.get_annotations(opts)
+                        } else {
+                            String::new()
+                        };
+                        LibraryConfig::new(
+                            config_name,
+                            config_value_str,
+                            //i.e. que no tiene sub_configs, solo es un valor simple para esta
+                            //config como
+                            // data: true
+                            Vec::new(),
+                            annotation
+                        )
+                    }
+                };
+
+                match library_name {
+                    "lombok" => context.lombok_configs.push(library_config),
+                    "jpa" => context.jpa_configs.push(library_config),
+                    "jackson" => context.jackson_configs.push(library_config),
+                    _ => {}
+                }
+            }
         }
         Ok(())
     }
@@ -340,20 +456,17 @@ impl JavaClass {
         Ok(())
     }
 
-    // Método para aplicar configuraciones de Lombok después del parsing
-    pub fn apply_lombok_configurations(&mut self, context: &ParseContext) {
-        if !context.lombok_configs.is_empty() {
-            println!("[LOG] Aplicando configuraciones Lombok: {:?}", context.lombok_configs);
-            // Aquí puedes procesar las configuraciones de Lombok
-            // Por ejemplo, agregar anotaciones a nivel de clase
-        }
-    }
-
-    // Método para aplicar configuraciones de JPA después del parsing
-    pub fn apply_jpa_configurations(&mut self, context: &ParseContext) {
-        if !context.jpa_configs.is_empty() {
-            println!("[LOG] Aplicando configuraciones JPA: {:?}", context.jpa_configs);
-            // Aquí puedes procesar las configuraciones de JPA
+    fn get_current_library(context: &ParseContext) -> Option<&str> {
+        // La librería está en la posición [1] del path cuando estamos en opts.libreria
+        if context.current_path.len() >= 2 && context.current_path[0] == "opts" {
+            match context.current_path[1].as_str() {
+                "lombok" => Some("lombok"),
+                "jpa" => Some("jpa"),
+                "jackson" => Some("jackson"),
+                _ => None,
+            }
+        } else {
+            None
         }
     }
 }

@@ -1,7 +1,10 @@
+{{#each headers}}
+{{this.annotation}}
+{{/each}}
 public class {{class_name}}{
     {{#each attributes}}
 
-        {{#each configs}}
+        {{#each sub_configs}}
         {{this.annotation}}
         {{/each}}
         private {{this.attribute_type}} {{this.attribute_name}};

@@ -100,3 +100,120 @@ entity_name:
 
 *notas de mojora:*
 - poner explicito false un comportamiento default en codigo
+
+
+*ejemplo completo*
+```
+user:
+  opts:
+    lombok:
+      data: true                    # @Data annotation
+      builder: true                 # @Builder annotation
+      equals_and_hashcode:
+        include: all               # all | explicit | none
+        call_super: false          # Para herencia
+      to_string:
+        include: field_names       # field_names | none | all
+      constructors:
+        no_args: true
+        all_args: true
+    
+    jpa:
+      entity: true
+      table_name: users
+  
+  # Clave primaria
+  id:
+    type: string
+    primary_key: true
+    strategy: uuid
+    column:
+      name: user_id
+      nullable: false
+  
+  # Campos básicos
+  username:
+    type: string
+    required: true
+    unique: true
+    column:
+      max_length: 50
+      min_length: 3
+      nullable: false
+    lombok:
+      exclude_from_toString: false
+  
+  email:
+    type: string
+    required: true
+    unique: true
+    format: email
+    column:
+      max_length: 100
+      nullable: false
+    lombok:
+      exclude_from_toString: false
+  
+  password:
+    type: string
+    required: true
+    column:
+      max_length: 255
+      min_length: 8
+      nullable: false
+    lombok:
+      exclude_from_toString: true  # Por seguridad
+  
+  first_name:
+    type: string
+    required: true
+    column:
+      max_length: 50
+      nullable: false
+  
+  last_name:
+    type: string
+    required: true
+    column:
+      max_length: 50
+      nullable: false
+  
+  phone:
+    type: string
+    required: false
+    format: phone
+    column:
+      max_length: 20
+      nullable: true
+  
+  birth_date:
+    type: date
+    required: false
+    column:
+      nullable: true
+  
+  is_active:
+    type: boolean
+    required: true
+    column:
+      nullable: false
+      default: true
+  
+  created_at:
+    type: timestamp
+    required: true
+    column:
+      nullable: false
+      default: "CURRENT_TIMESTAMP"
+    lombok:
+      exclude_from_toString: false
+  
+  updated_at:
+    type: timestamp
+    required: false
+    column:
+      nullable: true
+      on_update: "CURRENT_TIMESTAMP"
+    lombok:
+      exclude_from_toString: false
+```
