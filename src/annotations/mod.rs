@@ -48,6 +48,9 @@ macro_rules! register_config {
                     );
                 )*
 
+
+
+
                 //se anidaran todas las opts_selected que se especifiquen y este se regresara de toda la funcion
                 let mut config_annotation_result: String = $annotation.to_string();
 
@@ -63,6 +66,9 @@ macro_rules! register_config {
                 let mut opts_annotations: Vec<String> = Vec::new();
                 //recorremos todos los opts que estaran dentro de
                 for (opt_selected_name, mut param_selected_name) in opts_selected {
+
+
+
                     //opt_selected_name sera nuestro template general para esa config
                     match opt_selected_name.as_str() {
                         "single_value" => {
@@ -92,12 +98,13 @@ macro_rules! register_config {
                                 return config_annotation_result;
                             }
 
+
+
                             //catalogo de params para esa opt
                             let params_catalogue: HashMap<String, String> = opts_catalogue
                                 .get(&opt_selected_name)
                                 .map(|(_, params)| params.clone())
                                 .unwrap();
-
 
                             //crear el placeholder y reemplazar
                             let placeholder_param: String = format!("{{{}_param}}", $key);

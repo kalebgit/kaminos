@@ -324,6 +324,7 @@ impl JavaClass {
         config_value: &Value,
         context: &ParseContext
     ) -> Result<Config, Error> {
+        println!("[Log] Estamos viendo si {} es de valor simple o con opts", config_name);
         // Crear proveedor de anotaciones
         let provider = create_config(&config_name.to_string())
             .ok_or_else(|| Error::new(
@@ -351,6 +352,7 @@ impl JavaClass {
                 // Valor simple
                 println!("[Log] no hay opciones para esta configuracion, solo un valor...");
                 config_value_str = get_value_string!(&config_value);
+                //ponerle un prefijo prefijo + para indicar que es un valor individual
                 opts.push(("single_value".to_string(), config_value_str.clone()));
             }
         }
@@ -377,30 +379,42 @@ impl JavaClass {
         context: &mut ParseContext
     )->Result<(), Error>{
         //si existen configuraciones para cierta libreria
+        println!("[Log] [library configs] recibimos libreria de {}", library_name);
         if let Value::Mapping(configs_map) = library_configs {
             //iteramos sobre cada configuracion como data: true, builder: true, o equals_hashcode: compuesto para lombok
             //por cada iteracion se debe crear un LibraryConfig
             for (config_key, config_value) in configs_map {
                 let config_name = get_name!(config_key);
+                println!("[Log] [library configs] configurando {}", config_name);
                 //se deben crear las sub_configuraciones si tiene el config
+                println!("[Log] [library configs] buscando si tiene mas opciones...");
                 let library_config = match config_value {
                     //significa que tiene opciones extra o sub_configs
                     //se debe crear una Config por cada iteracion su mapping
-                    Value::Mapping(sub_config_map) => {
-                        let mut sub_configs: Vec<Config> = Vec::new();
-                        for (sub_config_key, sub_config_value) in sub_config_map {
-                            let sub_config_name = get_name!(sub_config_key);
-                            let processed_config: Config = Self::process_field_config(&sub_config_name, sub_config_value, &context)?;
-                            sub_configs.push(processed_config);
-                        }
 
-                        let annotation: String = sub_configs.iter().map(|config| config.annotation.as_str()).collect::<Vec<&str>>().join(", ");
+
+                    // Value::Mapping(sub_config_map) => {
+                    Value::Mapping(_) => {
+                        println!("[Log] [library configs] {} si   tienen mas opciones: ", config_name);
+
+                        // let mut sub_configs: Vec<Config> = Vec::new();
+                        // for (sub_config_key, sub_config_value) in sub_config_map {
+                        //     let sub_config_name = get_name!(sub_config_key);
+                        //     println!("[Log] [library configs] verificando opcion: {}", sub_config_name);
+
+                        let processed_config: Config = Self::process_field_config(&config_name, config_value, &context)?;
+
+                        //     sub_configs.push(processed_config);
+                        // }
+
+                        // let annotation: String = sub_configs.iter().map(|config| config.annotation.as_str()).collect::<Vec<&str>>().join(", ");
+                        let annotation: String = processed_config.annotation;
 
                         //creamos el lib a partir de todas las sub_configs
                         LibraryConfig::new(
                             config_name,
                             String::new(),
-                            sub_configs,
+                            Vec::new(), //perdimos su rastro pues estan en process_field_config
                             annotation
                         )
                     }

@@ -7,10 +7,10 @@ struct EqualsAndHashCode;
 register_config!(EqualsAndHashCode, "equals_and_hashcode", "@EqualsAndHashCode({opts})",
     [
         (
-            "include",
+            "only_explicitly_included",
             (
-                "onlyExplicitlyIncluded = {include_param}",
-                [("all", "false"), ("explicit", "true"), ("none", "true")]
+                "onlyExplicitlyIncluded = {only_explicitly_included_param}",
+                [("false", "false"), ("true", "true")]
             )
         ),
         (

@@ -7,10 +7,17 @@ struct ToString;
 register_config!(ToString, "to_string", "@ToString({opts})",
     [
         (
-            "include",
+            "only_explicitly_included",
             (
-                "includeFieldNames = {include_param}",
-                [("field_names", "true"), ("none", "false"), ("all", "true")]
+                "onlyExplicitlyIncluded = {only_explicitly_included_param}",
+                [("false", "false"), ("true", "true")]
+            )
+        ),
+        (
+            "include_field_names",
+            (
+                "includeFieldNames = {include_field_names_param}",
+                [("true", "true"), ("false", "false")]
             )
         )
     ]);

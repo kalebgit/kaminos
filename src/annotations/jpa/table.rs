@@ -10,7 +10,7 @@ register_config!(Table, "table_name", "@Table({opts})",
             "name",
             (
                 "name = \"{name_param}\"",
-                []
+                [("free", "")]
             )
         )
     ]);
