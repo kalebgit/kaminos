@@ -4,7 +4,7 @@ use crate::annotations::{ConfigRegistry, AnnotationProvider};
 
 struct Table;
 
-register_config!(Table, "table_name", "@Table({opts})",
+register_config!(Table, "table", "@Table({opts})",
     [
         (
             "name",

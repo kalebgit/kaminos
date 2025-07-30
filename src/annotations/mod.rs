@@ -120,34 +120,38 @@ macro_rules! register_config {
                             let opt_annotation_parcial_result: String;
 
                             //verificar si es de valores libres o bajo cierto parametro
+                            // si hay opts_selected catalogue tomar el primero parameter como default
+                            let default_option_name:String = if parameters_vec.is_empty() {
+                                String::new() // O cualquier valor por defecto que prefieras
+                            } else {
+                                parameters_vec[0].0.clone()
+                            };
+
+
+                            let param_backup_for_free_variables: String = param_selected_name.clone();
+                            // si el parametro no esta dentro de la lista definida (puede ser cuando haya variables libres)
+                            if param_selected_name.is_empty() || !params_catalogue.contains_key(&param_selected_name) {
+                                param_selected_name = default_option_name;
+                                println!("[log] Usando valor por defecto: {}", param_selected_name);
+                            }
+
+
+                            //variable final o vlaor para el opt
+                            let mut param_selected_final_value: String = String::new();
+                            //si la variable es libre
                             if param_selected_name == "free" {
-                                //agregamos el valor libre
-                                opt_annotation_parcial_result = param_selected_template.replace(&placeholder_param, &param_selected_name); //aunque no es ningun name sino un valor
+                                param_selected_final_value = param_backup_for_free_variables;
                             }else {
-
-                                // si hay opts_selected catalogue tomar el primero parameter como default
-                                let default_option_name:String = if parameters_vec.is_empty() {
-                                    String::new() // O cualquier valor por defecto que prefieras
-                                } else {
-                                    parameters_vec[0].0.clone()
-                                };
-
-                                // Si no hay parámetros definidos en yaml entonces usamos el valor por defecto
-                                if param_selected_name.is_empty() || !params_catalogue.contains_key(&param_selected_name) {
-                                    param_selected_name = default_option_name;
-                                    println!("[log] Usando valor por defecto: {}", param_selected_name);
-                                }
-
                                 //obtener el string asociado al param_selected que ira dentro de la anotacion
-                                let param_selected_final_value: String = params_catalogue
+                                 param_selected_final_value = params_catalogue
                                     .get(&param_selected_name)
                                     .cloned()
                                     .unwrap();
-
-                                //crear el final string
-
-                                opt_annotation_parcial_result= param_selected_template.replace(&placeholder_param, &param_selected_final_value)
                             }
+
+
+                            //crear el final string
+                            opt_annotation_parcial_result= param_selected_template.replace(&placeholder_param, &param_selected_final_value);
                             println!("[log] el resultado parcial para esta opt de conifg {} es: \n============\n{}\n============\n", $key, opt_annotation_parcial_result);
                             opts_annotations.push(opt_annotation_parcial_result);
                         }

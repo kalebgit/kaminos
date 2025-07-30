@@ -15,7 +15,8 @@ user:
 
     jpa:
       entity: true
-      table_name: users
+      table:
+        name: users
 
   # Clave primaria
   id:
