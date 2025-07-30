@@ -1,6 +1,6 @@
 use crate::register_config;
 use std::collections::HashMap;
-use super::{AnnotationProvider, ConfigRegistry};
+use crate::annotations::{ConfigRegistry,AnnotationProvider};
 
 //primary key
 struct PrimaryKey;

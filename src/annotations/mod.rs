@@ -1,5 +1,6 @@
-pub mod primary_key;
-mod generated_value;
+pub mod jpa;
+pub mod lombok;
+
 
 pub trait AnnotationProvider {
     fn get_annotations(&self, opts_selected: Vec<(String, String)>)->String;
