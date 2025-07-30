@@ -31,10 +31,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     println!("{}", output);
 
 
-    let placeholder: String = String::from("{parametro}");
-    let mut template: String= String::from("el valor es {parametro}");
-    template = template.replace(&placeholder, "emi");
-    println!("{}", template);
     Ok(())
 }
 

@@ -32,15 +32,10 @@ macro_rules! register_config {
 
                 // Creación del diccionario de todas las anotaciones de los configs
                 let mut opts_catalogue: HashMap<String, (String, HashMap<String, String>)> = HashMap::new();
-                let mut parameters_vec: Vec<(String, String)> = Vec::new();
 
                 // Inicializar el opts_catalogue
                 $(
                     let mut opts_temporal: HashMap<String, String> = HashMap::new();
-                        //vemos por los parametros de cada opt_catalogue
-                        //transformamos a los parametros definidos en el mismo orden con:
-                    parameters_vec = vec![$(($config_opt_name.to_string(), $config_opt_value.to_string())),*];
-
                     $(
                         opts_temporal.insert($config_opt_name.to_string(), $config_opt_value.to_string());
                     )*
@@ -124,7 +119,7 @@ macro_rules! register_config {
 
                             //verificar si es de valores libres o bajo cierto parametro
                             // si hay opts_selected catalogue tomar el primero parameter como default
-                            let default_option_name:String = if parameters_vec.is_empty() {
+                            let default_option_name:String = if params_catalogue.is_empty() {
                                 String::new() // O cualquier valor por defecto que prefieras
                             } else {
                                 //IMPORTANTE: ESTUDIAR ESTO PUES ASI SACAMOS LA PRIMERA LLAVE DE NUESTRO DICCIONARIO
